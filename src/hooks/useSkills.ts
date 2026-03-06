@@ -31,8 +31,8 @@ async function fetchSkills(
     case 'popular':
       query = query.order('downloads', { ascending: false })
       break
-    case 'rating':
-      query = query.order('rating', { ascending: false })
+    case 'likes':
+      query = query.order('like_count', { ascending: false })
       break
     default:
       query = query.order('created_at', { ascending: false })

@@ -3,10 +3,21 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ExternalLink } from 'lucide-react'
+import {
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Tag,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Button, Badge } from '@/components/ui'
-import { ADMIN_ITEMS_PER_PAGE, ROUTES, SKILL_STATUS_LABELS, SKILL_STATUS_COLORS } from '@/constants'
+import { Button, Badge, Avatar } from '@/components/ui'
+import {
+  ADMIN_ITEMS_PER_PAGE,
+  ROUTES,
+  SKILL_STATUS_LABELS,
+  SKILL_STATUS_COLORS,
+} from '@/constants'
 import { cn } from '@/lib/utils'
 import type { SkillWithAuthor, SkillStatus } from '@/types'
 
@@ -18,6 +29,129 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
   { value: 'approved', label: '승인' },
   { value: 'rejected', label: '거절' },
 ]
+
+function SkillCard({
+  skill,
+  onApprove,
+  onReject,
+}: {
+  skill: SkillWithAuthor
+  onApprove: () => void
+  onReject: () => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="rounded-xl border border-border bg-surface">
+      <div className="flex items-center justify-between px-5 py-4">
+        <div className="flex items-center gap-3">
+          <Avatar
+            src={skill.author.avatar_url}
+            username={skill.author.username}
+            size="sm"
+          />
+          <div>
+            <div className="flex items-center gap-2">
+              <Link
+                href={ROUTES.SKILL_DETAIL(skill.id)}
+                className="text-sm font-bold text-text-primary hover:underline"
+              >
+                {skill.title}
+              </Link>
+              <ExternalLink size={12} className="text-text-tertiary" />
+            </div>
+            <div className="flex items-center gap-2 text-xs text-text-tertiary">
+              <span>{skill.author.username ?? skill.author.email}</span>
+              <span>·</span>
+              <span>{skill.category}</span>
+              <span>·</span>
+              <span>
+                {new Date(skill.created_at).toLocaleDateString('ko-KR')}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span
+            className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
+            style={{
+              backgroundColor: `${SKILL_STATUS_COLORS[skill.status]}15`,
+              color: SKILL_STATUS_COLORS[skill.status],
+            }}
+          >
+            {SKILL_STATUS_LABELS[skill.status]}
+          </span>
+
+          {skill.npm_package_name && (
+            <Badge variant="success" size="sm">
+              MCP
+            </Badge>
+          )}
+
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="ml-1 rounded-md p-1 text-text-tertiary transition-colors hover:bg-[#F5F5F5] hover:text-text-primary"
+          >
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-[#F0F0F0] px-5 py-4">
+          {skill.description && (
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-text-secondary">설명</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">
+                {skill.description}
+              </p>
+            </div>
+          )}
+
+          {skill.tags.length > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-1.5">
+              <Tag size={12} className="text-text-tertiary" />
+              {skill.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded bg-[#F5F5F5] px-2 py-0.5 text-[11px] font-medium text-text-secondary"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="mb-4 flex items-center gap-4 text-xs text-text-tertiary">
+            <span className="flex items-center gap-1">
+              <Package size={12} />
+              v{skill.version}
+            </span>
+            {skill.npm_package_name && (
+              <span className="font-mono text-success">
+                {skill.npm_package_name}
+              </span>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            {skill.status !== 'approved' && (
+              <Button variant="primary" size="sm" onClick={onApprove}>
+                승인 + MCP 배포
+              </Button>
+            )}
+            {skill.status !== 'rejected' && (
+              <Button variant="danger" size="sm" onClick={onReject}>
+                거절
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function AdminSkillsPage() {
   const [skills, setSkills] = useState<SkillWithAuthor[]>([])
@@ -66,7 +200,29 @@ export default function AdminSkillsPage() {
       return
     }
 
-    toast.success(`${SKILL_STATUS_LABELS[status]}으로 변경되었습니다`)
+    if (status === 'approved') {
+      toast.loading('승인 완료, MCP 패키지 배포 중...', { id: 'publish' })
+
+      try {
+        const res = await fetch(`/api/skills/${skillId}/publish`, {
+          method: 'POST',
+        })
+        const result = await res.json()
+
+        if (res.ok) {
+          toast.success(`승인 + MCP 배포 완료: ${result.data.packageName}`, {
+            id: 'publish',
+          })
+        } else {
+          toast.error(`승인됨, 배포 실패: ${result.error}`, { id: 'publish' })
+        }
+      } catch {
+        toast.error('승인됨, 배포 중 오류 발생', { id: 'publish' })
+      }
+    } else {
+      toast.success(`${SKILL_STATUS_LABELS[status]}으로 변경되었습니다`)
+    }
+
     fetchSkills()
   }
 
@@ -108,93 +264,15 @@ export default function AdminSkillsPage() {
         </p>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-[#FAFAFA]">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
-                    제목
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
-                    작성자
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
-                    카테고리
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
-                    상태
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
-                    등록일
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-text-secondary">
-                    액션
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {skills.map((skill) => (
-                  <tr
-                    key={skill.id}
-                    className="border-b border-[#F0F0F0] last:border-b-0"
-                  >
-                    <td className="px-4 py-3">
-                      <Link
-                        href={ROUTES.SKILL_DETAIL(skill.id)}
-                        className="flex items-center gap-1 text-sm font-medium text-text-primary hover:underline"
-                      >
-                        {skill.title}
-                        <ExternalLink size={12} className="text-text-tertiary" />
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-text-secondary">
-                      {skill.author.username ?? skill.author.email}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant="default" size="sm">
-                        {skill.category}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
-                        style={{
-                          backgroundColor: `${SKILL_STATUS_COLORS[skill.status]}15`,
-                          color: SKILL_STATUS_COLORS[skill.status],
-                        }}
-                      >
-                        {SKILL_STATUS_LABELS[skill.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-text-tertiary">
-                      {new Date(skill.created_at).toLocaleDateString('ko-KR')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1.5">
-                        {skill.status !== 'approved' && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => updateStatus(skill.id, 'approved')}
-                          >
-                            승인
-                          </Button>
-                        )}
-                        {skill.status !== 'rejected' && (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => updateStatus(skill.id, 'rejected')}
-                          >
-                            거절
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {skills.map((skill) => (
+              <SkillCard
+                key={skill.id}
+                skill={skill}
+                onApprove={() => updateStatus(skill.id, 'approved')}
+                onReject={() => updateStatus(skill.id, 'rejected')}
+              />
+            ))}
           </div>
 
           {totalPages > 1 && (

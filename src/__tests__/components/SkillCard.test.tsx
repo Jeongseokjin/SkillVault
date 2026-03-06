@@ -14,13 +14,14 @@ const mockSkill: SkillWithAuthor = {
   category: '개발',
   tags: ['react', 'typescript', 'nextjs', 'tailwind'],
   author_id: 'user-1',
-  price: 'free',
   downloads: 1234,
-  rating: 4.5,
-  rating_count: 10,
+  like_count: 42,
+  bookmark_count: 15,
   status: 'approved',
   file_url: null,
   preview_url: null,
+  npm_package_name: null,
+  npm_published_at: null,
   version: '1.0.0',
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-01-01T00:00:00Z',
@@ -56,20 +57,9 @@ describe('SkillCard', () => {
     expect(screen.getByText('개발')).toBeInTheDocument()
   })
 
-  it('renders free badge for free skills', () => {
+  it('renders like count', () => {
     render(<SkillCard skill={mockSkill} />)
-    expect(screen.getByText('무료')).toBeInTheDocument()
-  })
-
-  it('renders premium badge for premium skills', () => {
-    const premiumSkill = { ...mockSkill, price: 'premium' as const }
-    render(<SkillCard skill={premiumSkill} />)
-    expect(screen.getByText('프리미엄')).toBeInTheDocument()
-  })
-
-  it('renders rating', () => {
-    render(<SkillCard skill={mockSkill} />)
-    expect(screen.getByText('4.5')).toBeInTheDocument()
+    expect(screen.getByText('42')).toBeInTheDocument()
   })
 
   it('renders download count', () => {

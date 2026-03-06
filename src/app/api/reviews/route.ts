@@ -81,8 +81,7 @@ export async function POST(request: NextRequest) {
     .insert({
       skill_id: skillId,
       user_id: user.id,
-      rating: parsed.data.rating,
-      comment: parsed.data.comment || null,
+      comment: parsed.data.comment,
     })
     .select()
     .single()

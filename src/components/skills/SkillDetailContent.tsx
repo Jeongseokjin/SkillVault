@@ -7,17 +7,21 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import {
-  Star,
-  Download,
   Heart,
+  Download,
+  Bookmark,
   Flag,
   ArrowLeft,
   Calendar,
   Tag,
+  Package,
+  Copy,
+  Check,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useSkillDetail } from '@/hooks/useSkillDetail'
 import { useBookmarks, useBookmarkToggle } from '@/hooks/useBookmarks'
+import { useLikes, useLikeToggle } from '@/hooks/useLikes'
 import { reviewSchema, type ReviewSchema } from '@/lib/validations/skill'
 import { Button, Avatar, Badge, Textarea } from '@/components/ui'
 import { SkillReportModal } from '@/components/skills'
@@ -30,71 +34,7 @@ interface SkillDetailContentProps {
   userId: string | null
 }
 
-function StarRatingDisplay({ rating }: { rating: number }) {
-  const rounded = Math.round(rating)
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex gap-0.5">
-        {Array.from({ length: 5 }, (_, index) => (
-          <Star
-            key={index}
-            size={16}
-            className={cn(
-              index < rounded
-                ? 'fill-text-primary text-text-primary'
-                : 'fill-[#E5E5E5] text-[#E5E5E5]'
-            )}
-          />
-        ))}
-      </div>
-      <span className="text-sm font-bold text-text-primary">
-        {rating.toFixed(1)}
-      </span>
-    </div>
-  )
-}
-
-function StarRatingInput({
-  value,
-  onChange,
-}: {
-  value: number
-  onChange: (rating: number) => void
-}) {
-  const [hovered, setHovered] = useState(0)
-
-  return (
-    <div className="flex gap-1">
-      {Array.from({ length: 5 }, (_, index) => {
-        const starValue = index + 1
-        return (
-          <button
-            key={index}
-            type="button"
-            onMouseEnter={() => setHovered(starValue)}
-            onMouseLeave={() => setHovered(0)}
-            onClick={() => onChange(starValue)}
-            className="transition-transform hover:scale-110"
-          >
-            <Star
-              size={24}
-              className={cn(
-                starValue <= (hovered || value)
-                  ? 'fill-text-primary text-text-primary'
-                  : 'fill-[#E5E5E5] text-[#E5E5E5]'
-              )}
-            />
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 function ReviewItem({ review }: { review: Review }) {
-  const rounded = Math.round(review.rating)
-
   return (
     <div className="border-b border-[#F0F0F0] py-4 last:border-b-0">
       <div className="mb-2 flex items-center gap-3">
@@ -107,31 +47,14 @@ function ReviewItem({ review }: { review: Review }) {
           <p className="text-sm font-semibold text-text-primary">
             {review.user?.username ?? '알 수 없음'}
           </p>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-px">
-              {Array.from({ length: 5 }, (_, index) => (
-                <Star
-                  key={index}
-                  size={10}
-                  className={cn(
-                    index < rounded
-                      ? 'fill-text-primary text-text-primary'
-                      : 'fill-[#E5E5E5] text-[#E5E5E5]'
-                  )}
-                />
-              ))}
-            </div>
-            <span className="text-xs text-text-tertiary">
-              {new Date(review.created_at).toLocaleDateString('ko-KR')}
-            </span>
-          </div>
+          <span className="text-xs text-text-tertiary">
+            {new Date(review.created_at).toLocaleDateString('ko-KR')}
+          </span>
         </div>
       </div>
-      {review.comment && (
-        <p className="text-sm leading-relaxed text-text-secondary">
-          {review.comment}
-        </p>
-      )}
+      <p className="text-sm leading-relaxed text-text-secondary">
+        {review.comment}
+      </p>
     </div>
   )
 }
@@ -145,23 +68,15 @@ function ReviewForm({
   userId: string
   onSuccess: () => void
 }) {
-  const [ratingValue, setRatingValue] = useState(0)
-
   const {
     register,
     handleSubmit,
-    setValue,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ReviewSchema>({
     resolver: zodResolver(reviewSchema),
-    defaultValues: { rating: 0, comment: '' },
+    defaultValues: { comment: '' },
   })
-
-  function handleRatingChange(rating: number) {
-    setRatingValue(rating)
-    setValue('rating', rating, { shouldValidate: true })
-  }
 
   async function onSubmit(formData: ReviewSchema) {
     const supabase = createClient()
@@ -169,8 +84,7 @@ function ReviewForm({
     const { error } = await supabase.from('reviews').insert({
       skill_id: skillId,
       user_id: userId,
-      rating: formData.rating,
-      comment: formData.comment || null,
+      comment: formData.comment,
     })
 
     if (error) {
@@ -184,21 +98,13 @@ function ReviewForm({
 
     toast.success('리뷰가 등록되었습니다')
     reset()
-    setRatingValue(0)
     onSuccess()
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <p className="mb-2 text-sm font-semibold text-text-primary">별점</p>
-        <StarRatingInput value={ratingValue} onChange={handleRatingChange} />
-        {errors.rating && (
-          <p className="mt-1 text-xs text-error">{errors.rating.message}</p>
-        )}
-      </div>
       <Textarea
-        label="리뷰 (선택)"
+        label="리뷰"
         placeholder="이 스킬에 대한 의견을 남겨주세요"
         rows={3}
         error={errors.comment?.message}
@@ -222,14 +128,17 @@ export default function SkillDetailContent({
 }: SkillDetailContentProps) {
   const router = useRouter()
   const [isReportOpen, setIsReportOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const { data, isLoading, error, refetch } = useSkillDetail(skillId)
   const { data: bookmarks } = useBookmarks(userId ?? undefined)
   const bookmarkToggle = useBookmarkToggle(userId ?? undefined)
+  const { data: likes } = useLikes(userId ?? undefined)
+  const likeToggle = useLikeToggle(userId ?? undefined)
 
-  const isBookmarked = bookmarks?.some(
-    (bookmark) => bookmark.skill_id === skillId
-  ) ?? false
+  const isBookmarked =
+    bookmarks?.some((bookmark) => bookmark.skill_id === skillId) ?? false
+  const isLiked = likes?.some((like) => like.skill_id === skillId) ?? false
 
   function handleBookmarkClick() {
     if (!userId) {
@@ -237,6 +146,14 @@ export default function SkillDetailContent({
       return
     }
     bookmarkToggle.mutate({ skillId, isBookmarked })
+  }
+
+  function handleLikeClick() {
+    if (!userId) {
+      toast.error('로그인이 필요합니다')
+      return
+    }
+    likeToggle.mutate({ skillId, isLiked })
   }
 
   async function handleDownload() {
@@ -265,6 +182,13 @@ export default function SkillDetailContent({
     }
   }
 
+  function handleCopyInstall(text: string) {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    toast.success('복사되었습니다')
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -279,7 +203,11 @@ export default function SkillDetailContent({
         <p className="mb-4 text-text-secondary">
           스킬 정보를 불러올 수 없습니다
         </p>
-        <Button variant="outline" size="md" onClick={() => router.push(ROUTES.HOME)}>
+        <Button
+          variant="outline"
+          size="md"
+          onClick={() => router.push(ROUTES.HOME)}
+        >
           홈으로 돌아가기
         </Button>
       </div>
@@ -287,7 +215,6 @@ export default function SkillDetailContent({
   }
 
   const { skill, reviews } = data
-  const isPremium = skill.price === 'premium'
   const isAuthor = userId === skill.author_id
 
   return (
@@ -318,9 +245,6 @@ export default function SkillDetailContent({
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Badge variant="default" size="md">
                 {skill.category}
-              </Badge>
-              <Badge variant={isPremium ? 'premium' : 'free'} size="md">
-                {isPremium ? '프리미엄' : '무료'}
               </Badge>
             </div>
             <h1 className="mb-2 text-2xl font-bold tracking-[-0.5px] text-text-primary">
@@ -404,13 +328,17 @@ export default function SkillDetailContent({
 
               <div className="mb-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-text-secondary">평점</span>
-                  <StarRatingDisplay rating={skill.rating} />
+                  <span className="text-sm text-text-secondary">좋아요</span>
+                  <span className="flex items-center gap-1 text-sm font-semibold text-text-primary">
+                    <Heart size={14} className="text-error" />
+                    {skill.like_count}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-text-secondary">리뷰</span>
-                  <span className="text-sm font-semibold text-text-primary">
-                    {skill.rating_count}개
+                  <span className="text-sm text-text-secondary">저장</span>
+                  <span className="flex items-center gap-1 text-sm font-semibold text-text-primary">
+                    <Bookmark size={14} />
+                    {skill.bookmark_count}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -433,31 +361,76 @@ export default function SkillDetailContent({
                 </Button>
                 <div className="flex gap-2">
                   <Button
+                    variant={isLiked ? 'secondary' : 'outline'}
+                    size="md"
+                    fullWidth
+                    onClick={handleLikeClick}
+                  >
+                    <Heart
+                      size={14}
+                      className={cn(isLiked ? 'fill-error text-error' : '')}
+                    />
+                    {isLiked ? '좋아요 취소' : '좋아요'}
+                  </Button>
+                  <Button
                     variant={isBookmarked ? 'secondary' : 'outline'}
                     size="md"
                     fullWidth
                     onClick={handleBookmarkClick}
                   >
-                    <Heart
+                    <Bookmark
                       size={14}
                       className={cn(
-                        isBookmarked ? 'fill-error text-error' : ''
+                        isBookmarked
+                          ? 'fill-text-primary text-text-primary'
+                          : ''
                       )}
                     />
                     {isBookmarked ? '저장됨' : '저장'}
                   </Button>
-                  {userId && !isAuthor && (
-                    <Button
-                      variant="ghost"
-                      size="md"
-                      onClick={() => setIsReportOpen(true)}
-                    >
-                      <Flag size={14} />
-                    </Button>
-                  )}
                 </div>
+                {userId && !isAuthor && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
+                    onClick={() => setIsReportOpen(true)}
+                  >
+                    <Flag size={14} />
+                    신고
+                  </Button>
+                )}
               </div>
             </div>
+
+            {skill.npm_package_name && (
+              <div className="rounded-xl border border-border bg-surface p-6">
+                <div className="mb-3 flex items-center gap-2">
+                  <Package size={16} className="text-success" />
+                  <h3 className="text-sm font-bold text-text-primary">
+                    MCP 패키지
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  <button
+                    onClick={() =>
+                      handleCopyInstall(`npx ${skill.npm_package_name}`)
+                    }
+                    className="flex w-full items-center justify-between rounded-lg bg-[#1E1E1E] px-4 py-3 text-left font-mono text-xs text-[#D4D4D4] transition-colors hover:bg-[#2D2D2D]"
+                  >
+                    <span>npx {skill.npm_package_name}</span>
+                    {copied ? (
+                      <Check size={14} className="text-success" />
+                    ) : (
+                      <Copy size={14} className="text-[#888]" />
+                    )}
+                  </button>
+                  <p className="text-[11px] text-text-tertiary">
+                    Claude Desktop 설정에 추가하여 사용할 수 있습니다
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -25,19 +25,12 @@ export const skillUploadSchema = z.object({
       z.string().max(MAX_TAG_LENGTH, `태그는 ${MAX_TAG_LENGTH}자 이하여야 합니다`)
     )
     .max(MAX_TAGS_COUNT, `태그는 최대 ${MAX_TAGS_COUNT}개까지 추가 가능합니다`),
-  price: z.enum(['free', 'premium'], {
-    errorMap: () => ({ message: '가격 유형을 선택해주세요' }),
-  }),
 })
 
 export const reviewSchema = z.object({
-  rating: z
-    .number()
-    .int('별점은 정수여야 합니다')
-    .min(1, '별점은 1점 이상이어야 합니다')
-    .max(5, '별점은 5점 이하여야 합니다'),
   comment: z
     .string()
+    .min(1, '리뷰 내용을 입력해주세요')
     .max(MAX_COMMENT_LENGTH, `리뷰는 ${MAX_COMMENT_LENGTH}자 이하여야 합니다`),
 })
 

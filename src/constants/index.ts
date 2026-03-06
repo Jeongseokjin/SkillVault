@@ -51,7 +51,7 @@ export const CATEGORIES = [
 export const SORT_OPTIONS = [
   { value: 'latest', label: '최신순' },
   { value: 'popular', label: '인기순' },
-  { value: 'rating', label: '평점순' },
+  { value: 'likes', label: '좋아요순' },
 ] as const
 
 // ========================

@@ -14,8 +14,8 @@ const ROLE_LABELS: Record<UserRole, string> = {
   user: '일반유저',
 }
 
-const ROLE_BADGE_VARIANT: Record<UserRole, 'premium' | 'warning' | 'default'> = {
-  superadmin: 'premium',
+const ROLE_BADGE_VARIANT: Record<UserRole, 'info' | 'warning' | 'default'> = {
+  superadmin: 'info',
   admin: 'warning',
   user: 'default',
 }

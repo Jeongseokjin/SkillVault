@@ -11,6 +11,7 @@ import { SkillCard } from '@/components/skills'
 import { Button, Avatar, EmptyState } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useBookmarks, useBookmarkToggle } from '@/hooks/useBookmarks'
+import { useLikes, useLikeToggle } from '@/hooks/useLikes'
 import { ROUTES } from '@/constants'
 import { cn } from '@/lib/utils'
 import type { SkillWithAuthor, Review, Skill } from '@/types'
@@ -37,10 +38,13 @@ export default function MyPage() {
 
   const { data: bookmarks } = useBookmarks(user?.id)
   const bookmarkToggle = useBookmarkToggle(user?.id)
+  const { data: likes } = useLikes(user?.id)
+  const likeToggle = useLikeToggle(user?.id)
 
   const bookmarkedIds = new Set(
     bookmarks?.map((bookmark) => bookmark.skill_id) ?? []
   )
+  const likedIds = new Set(likes?.map((like) => like.skill_id) ?? [])
 
   useEffect(() => {
     if (authLoading) return
@@ -84,6 +88,13 @@ export default function MyPage() {
     bookmarkToggle.mutate({
       skillId,
       isBookmarked: bookmarkedIds.has(skillId),
+    })
+  }
+
+  function handleLikeToggle(skillId: string) {
+    likeToggle.mutate({
+      skillId,
+      isLiked: likedIds.has(skillId),
     })
   }
 
@@ -170,14 +181,18 @@ export default function MyPage() {
               <MySkillsTab
                 skills={mySkills}
                 bookmarkedIds={bookmarkedIds}
+                likedIds={likedIds}
                 onBookmarkToggle={handleBookmarkToggle}
+                onLikeToggle={handleLikeToggle}
               />
             )}
             {activeTab === 'bookmarks' && (
               <MyBookmarksTab
                 skills={bookmarkedSkills}
                 bookmarkedIds={bookmarkedIds}
+                likedIds={likedIds}
                 onBookmarkToggle={handleBookmarkToggle}
+                onLikeToggle={handleLikeToggle}
               />
             )}
             {activeTab === 'reviews' && (
@@ -193,11 +208,15 @@ export default function MyPage() {
 function MySkillsTab({
   skills,
   bookmarkedIds,
+  likedIds,
   onBookmarkToggle,
+  onLikeToggle,
 }: {
   skills: SkillWithAuthor[]
   bookmarkedIds: Set<string>
+  likedIds: Set<string>
   onBookmarkToggle: (skillId: string) => void
+  onLikeToggle: (skillId: string) => void
 }) {
   if (skills.length === 0) {
     return <EmptyState type="no-skills" />
@@ -210,7 +229,9 @@ function MySkillsTab({
           key={skill.id}
           skill={skill}
           isBookmarked={bookmarkedIds.has(skill.id)}
+          isLiked={likedIds.has(skill.id)}
           onBookmarkToggle={onBookmarkToggle}
+          onLikeToggle={onLikeToggle}
           showStatus
         />
       ))}
@@ -221,11 +242,15 @@ function MySkillsTab({
 function MyBookmarksTab({
   skills,
   bookmarkedIds,
+  likedIds,
   onBookmarkToggle,
+  onLikeToggle,
 }: {
   skills: SkillWithAuthor[]
   bookmarkedIds: Set<string>
+  likedIds: Set<string>
   onBookmarkToggle: (skillId: string) => void
+  onLikeToggle: (skillId: string) => void
 }) {
   if (skills.length === 0) {
     return <EmptyState type="no-bookmarks" />
@@ -238,7 +263,9 @@ function MyBookmarksTab({
           key={skill.id}
           skill={skill}
           isBookmarked={bookmarkedIds.has(skill.id)}
+          isLiked={likedIds.has(skill.id)}
           onBookmarkToggle={onBookmarkToggle}
+          onLikeToggle={onLikeToggle}
         />
       ))}
     </div>
@@ -272,27 +299,9 @@ function MyReviewsTab({ reviews }: { reviews: ReviewWithSkill[] }) {
               {new Date(review.created_at).toLocaleDateString('ko-KR')}
             </span>
           </div>
-          <div className="mb-2 flex items-center gap-1">
-            {Array.from({ length: 5 }, (_, index) => (
-              <span
-                key={index}
-                className={cn(
-                  'text-xs',
-                  index < review.rating ? 'text-text-primary' : 'text-[#E5E5E5]'
-                )}
-              >
-                ★
-              </span>
-            ))}
-            <span className="ml-1 text-xs font-medium text-text-secondary">
-              {review.rating}.0
-            </span>
-          </div>
-          {review.comment && (
-            <p className="text-sm leading-relaxed text-text-secondary">
-              {review.comment}
-            </p>
-          )}
+          <p className="text-sm leading-relaxed text-text-secondary">
+            {review.comment}
+          </p>
         </div>
       ))}
     </div>

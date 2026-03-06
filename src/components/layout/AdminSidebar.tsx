@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, Users, Flag } from 'lucide-react'
+import { LayoutDashboard, Package, Users, Flag, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { ROUTES } from '@/constants'
@@ -65,6 +65,13 @@ export default function AdminSidebar() {
   return (
     <aside className="w-60 shrink-0 border-r border-border bg-surface">
       <div className="px-4 py-6">
+        <Link
+          href={ROUTES.HOME}
+          className="mb-5 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-[#F5F5F5] hover:text-text-primary"
+        >
+          <ArrowLeft size={16} />
+          홈으로 돌아가기
+        </Link>
         <h2 className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
           관리자
         </h2>

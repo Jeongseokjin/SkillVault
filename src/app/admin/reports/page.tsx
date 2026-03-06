@@ -31,7 +31,7 @@ const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
   dismissed: '#888888',
 }
 
-interface ReportWithRelations extends Report {
+interface ReportWithRelations extends Omit<Report, 'skill' | 'reporter'> {
   skill: { id: string; title: string } | null
   reporter: { id: string; username: string | null; email: string } | null
 }

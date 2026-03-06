@@ -18,9 +18,8 @@ export interface Profile {
 // 스킬 관련 타입
 // ========================
 export type SkillStatus = 'pending' | 'approved' | 'rejected'
-export type SkillPrice = 'free' | 'premium'
 export type Category = '디자인/UI' | '개발' | '마케팅' | '기타'
-export type SortOption = 'latest' | 'popular' | 'rating'
+export type SortOption = 'latest' | 'popular' | 'likes'
 
 export interface Skill {
   id: string
@@ -30,13 +29,14 @@ export interface Skill {
   tags: string[]
   author_id: string
   author?: Profile
-  price: SkillPrice
   downloads: number
-  rating: number
-  rating_count: number
+  like_count: number
+  bookmark_count: number
   status: SkillStatus
   file_url: string | null
   preview_url: string | null
+  npm_package_name: string | null
+  npm_published_at: string | null
   version: string
   created_at: string
   updated_at: string
@@ -54,8 +54,14 @@ export interface Review {
   skill_id: string
   user_id: string
   user?: Profile
-  rating: number
-  comment: string | null
+  comment: string
+  created_at: string
+}
+
+export interface Like {
+  id: string
+  skill_id: string
+  user_id: string
   created_at: string
 }
 
@@ -147,13 +153,11 @@ export interface SkillUploadFormValues {
   description: string
   category: Category
   tags: string[]
-  price: SkillPrice
   file: File | null
   preview: File | null
 }
 
 export interface ReviewFormValues {
-  rating: number
   comment: string
 }
 

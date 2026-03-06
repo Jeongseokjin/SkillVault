@@ -24,7 +24,7 @@ import {
   ALLOWED_FILE_TYPES,
   ALLOWED_IMAGE_TYPES,
 } from '@/constants'
-import type { Category, SkillPrice } from '@/types'
+import type { Category } from '@/types'
 
 const UPLOAD_CATEGORIES = CATEGORIES.filter(
   (category) => category.value !== '전체'
@@ -53,7 +53,6 @@ export default function SkillUploadForm({ userId }: SkillUploadFormProps) {
   } = useForm<SkillUploadSchema>({
     resolver: zodResolver(skillUploadSchema),
     defaultValues: {
-      price: 'free',
       tags: [],
     },
   })
@@ -61,7 +60,6 @@ export default function SkillUploadForm({ userId }: SkillUploadFormProps) {
   const titleValue = watch('title') ?? ''
   const descriptionValue = watch('description') ?? ''
   const selectedCategory = watch('category')
-  const selectedPrice = watch('price')
 
   const onSkillDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -173,7 +171,6 @@ export default function SkillUploadForm({ userId }: SkillUploadFormProps) {
         description: formData.description,
         category: formData.category,
         tags: formData.tags,
-        price: formData.price,
         author_id: userId,
         file_url: fileUrl,
         preview_url: previewUrl,
@@ -244,29 +241,6 @@ export default function SkillUploadForm({ userId }: SkillUploadFormProps) {
         {errors.category && (
           <p className="mt-1 text-xs text-error">{errors.category.message}</p>
         )}
-      </div>
-
-      <div>
-        <p className="mb-2 text-sm font-semibold text-text-primary">가격</p>
-        <div className="flex gap-3">
-          {(['free', 'premium'] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setValue('price', option as SkillPrice)}
-              className={cn(
-                'flex-1 rounded-lg border-[1.5px] px-4 py-3 text-sm font-medium transition-all duration-150',
-                selectedPrice === option
-                  ? option === 'free'
-                    ? 'border-success bg-[#F0FDF4] text-success'
-                    : 'border-premium bg-[#F5F3FF] text-premium'
-                  : 'border-border bg-surface text-text-secondary'
-              )}
-            >
-              {option === 'free' ? '무료' : '프리미엄'}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div>

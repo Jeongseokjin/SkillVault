@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
 
   if (sort === 'popular') {
     query = query.order('downloads', { ascending: false })
-  } else if (sort === 'rating') {
-    query = query.order('rating', { ascending: false })
+  } else if (sort === 'likes') {
+    query = query.order('like_count', { ascending: false })
   } else {
     query = query.order('created_at', { ascending: false })
   }

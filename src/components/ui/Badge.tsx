@@ -7,8 +7,7 @@ const VARIANT_STYLES = {
   success: 'bg-[#F0FDF4] text-success',
   warning: 'bg-[#FFFBEB] text-warning',
   error: 'bg-[#FEF2F2] text-error',
-  premium: 'bg-[#F5F3FF] text-premium',
-  free: 'bg-[#F0FDF4] text-success',
+  info: 'bg-[#F5F3FF] text-premium',
 } as const
 
 const SIZE_STYLES = {

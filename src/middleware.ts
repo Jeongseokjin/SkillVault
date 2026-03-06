@@ -4,6 +4,7 @@ import { updateSession } from '@/lib/supabase/middleware'
 const PROTECTED_ROUTES = ['/mypage', '/skills/upload']
 const ADMIN_ROUTES = ['/admin']
 const AUTH_ROUTES = ['/auth/login', '/auth/signup']
+const PUBLIC_API_ROUTES = ['/api/auth']
 
 function matchesRoutes(pathname: string, routes: string[]) {
   return routes.some(
@@ -18,12 +19,11 @@ export async function middleware(request: NextRequest) {
   const isProtected = matchesRoutes(pathname, PROTECTED_ROUTES)
   const isAdmin = matchesRoutes(pathname, ADMIN_ROUTES)
   const isAuth = matchesRoutes(pathname, AUTH_ROUTES)
+  const isPublicApi = matchesRoutes(pathname, PUBLIC_API_ROUTES)
 
-  if (!user && (isProtected || isAdmin)) {
+  if (!user && !isAuth && !isPublicApi) {
     const loginUrl = new URL('/auth/login', request.url)
-    if (isProtected) {
-      loginUrl.searchParams.set('redirectTo', pathname)
-    }
+    loginUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(loginUrl)
   }
 

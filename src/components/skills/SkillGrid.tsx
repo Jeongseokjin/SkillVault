@@ -10,7 +10,9 @@ interface SkillGridProps {
   skills: SkillWithAuthor[]
   isLoading: boolean
   bookmarkedIds?: Set<string>
+  likedIds?: Set<string>
   onBookmarkToggle?: (skillId: string) => void
+  onLikeToggle?: (skillId: string) => void
   showStatus?: boolean
 }
 
@@ -18,7 +20,9 @@ export default function SkillGrid({
   skills,
   isLoading,
   bookmarkedIds,
+  likedIds,
   onBookmarkToggle,
+  onLikeToggle,
   showStatus = false,
 }: SkillGridProps) {
   if (isLoading) {
@@ -38,7 +42,9 @@ export default function SkillGrid({
           key={skill.id}
           skill={skill}
           isBookmarked={bookmarkedIds?.has(skill.id)}
+          isLiked={likedIds?.has(skill.id)}
           onBookmarkToggle={onBookmarkToggle}
+          onLikeToggle={onLikeToggle}
           showStatus={showStatus}
         />
       ))}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Star, Heart, Download } from 'lucide-react'
+import { Heart, Download, Bookmark } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROUTES, SKILL_STATUS_LABELS, SKILL_STATUS_COLORS } from '@/constants'
 import { Badge } from '@/components/ui'
@@ -19,33 +19,10 @@ const MAX_VISIBLE_TAGS = 3
 interface SkillCardProps {
   skill: SkillWithAuthor
   isBookmarked?: boolean
+  isLiked?: boolean
   onBookmarkToggle?: (skillId: string) => void
+  onLikeToggle?: (skillId: string) => void
   showStatus?: boolean
-}
-
-function StarRating({ rating }: { rating: number }) {
-  const rounded = Math.round(rating)
-
-  return (
-    <div className="flex items-center gap-1">
-      <span className="text-[13px] font-bold text-text-primary">
-        {rating.toFixed(1)}
-      </span>
-      <div className="flex gap-px">
-        {Array.from({ length: 5 }, (_, index) => (
-          <Star
-            key={index}
-            size={10}
-            className={cn(
-              index < rounded
-                ? 'fill-text-primary text-text-primary'
-                : 'fill-[#E5E5E5] text-[#E5E5E5]'
-            )}
-          />
-        ))}
-      </div>
-    </div>
-  )
 }
 
 function StatusBadge({ status }: { status: SkillStatus }) {
@@ -65,15 +42,22 @@ function StatusBadge({ status }: { status: SkillStatus }) {
 export default function SkillCard({
   skill,
   isBookmarked = false,
+  isLiked = false,
   onBookmarkToggle,
+  onLikeToggle,
   showStatus = false,
 }: SkillCardProps) {
   const router = useRouter()
   const icon = CATEGORY_ICONS[skill.category] ?? '◎'
-  const isPremium = skill.price === 'premium'
 
   function handleCardClick() {
     router.push(ROUTES.SKILL_DETAIL(skill.id))
+  }
+
+  function handleLikeClick(event: React.MouseEvent) {
+    event.stopPropagation()
+    if (!onLikeToggle) return
+    onLikeToggle(skill.id)
   }
 
   function handleBookmarkClick(event: React.MouseEvent) {
@@ -107,14 +91,9 @@ export default function SkillCard({
         <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#F5F5F5] text-lg">
           {icon}
         </div>
-        <div className="flex items-center gap-1.5">
-          <Badge variant="default" size="md">
-            {skill.category}
-          </Badge>
-          <Badge variant={isPremium ? 'premium' : 'free'} size="md">
-            {isPremium ? '프리미엄' : '무료'}
-          </Badge>
-        </div>
+        <Badge variant="default" size="md">
+          {skill.category}
+        </Badge>
       </div>
 
       <h3 className="mb-2 text-base font-bold tracking-[-0.3px] text-text-primary">
@@ -144,7 +123,34 @@ export default function SkillCard({
       )}
 
       <div className="flex items-center justify-between border-t border-[#F0F0F0] pt-3.5">
-        <StarRating rating={skill.rating} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleLikeClick}
+            className="flex items-center gap-1 text-xs transition-colors duration-150"
+            aria-label={isLiked ? '좋아요 취소' : '좋아요'}
+          >
+            <Heart
+              size={14}
+              className={cn(
+                isLiked
+                  ? 'fill-error text-error'
+                  : 'fill-transparent text-[#AAAAAA] hover:text-error'
+              )}
+            />
+            <span className={cn(isLiked ? 'text-error' : 'text-text-tertiary')}>
+              {skill.like_count}
+            </span>
+          </button>
+          <span className="flex items-center gap-1 text-xs text-text-tertiary">
+            <Bookmark
+              size={13}
+              className={cn(
+                isBookmarked ? 'fill-text-primary text-text-primary' : ''
+              )}
+            />
+            {skill.bookmark_count}
+          </span>
+        </div>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 text-xs text-text-tertiary">
             <Download size={12} />
@@ -154,14 +160,14 @@ export default function SkillCard({
             <button
               onClick={handleBookmarkClick}
               className="transition-colors duration-150"
-              aria-label={isBookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+              aria-label={isBookmarked ? '저장 취소' : '저장'}
             >
-              <Heart
+              <Bookmark
                 size={14}
                 className={cn(
                   isBookmarked
-                    ? 'fill-error text-error'
-                    : 'fill-transparent text-[#AAAAAA] hover:text-error'
+                    ? 'fill-text-primary text-text-primary'
+                    : 'fill-transparent text-[#AAAAAA] hover:text-text-primary'
                 )}
               />
             </button>

@@ -8,6 +8,7 @@ import { EmptyState, Pagination } from '@/components/ui'
 import { useSkills } from '@/hooks/useSkills'
 import { useAuth } from '@/hooks/useAuth'
 import { useBookmarks, useBookmarkToggle } from '@/hooks/useBookmarks'
+import { useLikes, useLikeToggle } from '@/hooks/useLikes'
 import { ITEMS_PER_PAGE, ROUTES } from '@/constants'
 import type { Category, SortOption, SkillFilterValues } from '@/types'
 
@@ -60,11 +61,18 @@ export default function HomeContent() {
   const { user } = useAuth()
   const { data: bookmarks } = useBookmarks(user?.id)
   const { mutate: toggleBookmark } = useBookmarkToggle(user?.id)
+  const { data: likes } = useLikes(user?.id)
+  const { mutate: toggleLike } = useLikeToggle(user?.id)
 
   const bookmarkedIds = useMemo(() => {
     if (!bookmarks) return new Set<string>()
     return new Set(bookmarks.map((bookmark) => bookmark.skill_id))
   }, [bookmarks])
+
+  const likedIds = useMemo(() => {
+    if (!likes) return new Set<string>()
+    return new Set(likes.map((like) => like.skill_id))
+  }, [likes])
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
@@ -104,6 +112,14 @@ export default function HomeContent() {
       return
     }
     toggleBookmark({ skillId, isBookmarked: bookmarkedIds.has(skillId) })
+  }
+
+  function handleLikeToggle(skillId: string) {
+    if (!user) {
+      router.push(ROUTES.LOGIN)
+      return
+    }
+    toggleLike({ skillId, isLiked: likedIds.has(skillId) })
   }
 
   function handleSearchReset() {
@@ -171,7 +187,9 @@ export default function HomeContent() {
             skills={skills}
             isLoading={isLoading}
             bookmarkedIds={bookmarkedIds}
+            likedIds={likedIds}
             onBookmarkToggle={handleBookmarkToggle}
+            onLikeToggle={handleLikeToggle}
           />
         )}
 

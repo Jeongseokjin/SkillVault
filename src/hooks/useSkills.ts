@@ -1,85 +1,78 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { SkillWithAuthor } from "@/types";
-import type { SortOption } from "@/components/skills/SkillFilter";
+import { useQuery } from '@tanstack/react-query'
+import { createClient } from '@/lib/supabase/client'
+import { ITEMS_PER_PAGE } from '@/constants'
+import type { SkillWithAuthor, SkillFilterValues, PaginatedResponse } from '@/types'
 
-interface UseSkillsParams {
-  category?: string;
-  searchQuery?: string;
-  sortBy?: SortOption;
+async function fetchSkills(
+  filters: SkillFilterValues
+): Promise<PaginatedResponse<SkillWithAuthor>> {
+  const supabase = createClient()
+  const from = (filters.page - 1) * filters.limit
+  const to = from + filters.limit - 1
+
+  let query = supabase
+    .from('skills')
+    .select('*, author:profiles!skills_author_id_fkey(*)', { count: 'exact' })
+    .eq('status', 'approved')
+
+  if (filters.category !== '전체') {
+    query = query.eq('category', filters.category)
+  }
+
+  if (filters.search.trim()) {
+    query = query.or(
+      `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+    )
+  }
+
+  switch (filters.sort) {
+    case 'popular':
+      query = query.order('downloads', { ascending: false })
+      break
+    case 'rating':
+      query = query.order('rating', { ascending: false })
+      break
+    default:
+      query = query.order('created_at', { ascending: false })
+  }
+
+  const { data, error, count } = await query.range(from, to)
+
+  if (error) {
+    throw new Error('스킬 목록을 불러오는데 실패했습니다')
+  }
+
+  const total = count ?? 0
+
+  return {
+    data: (data ?? []) as SkillWithAuthor[],
+    total,
+    page: filters.page,
+    limit: filters.limit,
+    totalPages: Math.ceil(total / filters.limit),
+  }
 }
 
-interface UseSkillsReturn {
-  skills: SkillWithAuthor[];
-  isLoading: boolean;
-  error: string | null;
-  totalCount: number;
-  refetch: () => Promise<void>;
+export function useSkills(filters: SkillFilterValues) {
+  return useQuery({
+    queryKey: ['skills', filters],
+    queryFn: () => fetchSkills(filters),
+  })
 }
 
-export function useSkills({
-  category = "전체",
-  searchQuery = "",
-  sortBy = "latest",
-}: UseSkillsParams = {}): UseSkillsReturn {
-  const [skills, setSkills] = useState<SkillWithAuthor[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
-  const supabase = createClient();
+export function useSkillsWithDefaults(
+  overrides: Partial<SkillFilterValues> = {}
+) {
+  const filters: SkillFilterValues = {
+    category: '전체',
+    sort: 'latest',
+    search: '',
+    page: 1,
+    limit: ITEMS_PER_PAGE,
+    ...overrides,
+  }
 
-  const fetchSkills = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      let query = supabase
-        .from("skills")
-        .select("*, profiles(username, avatar_url)", { count: "exact" })
-        .eq("status", "approved");
-
-      if (category !== "전체") {
-        query = query.eq("category", category);
-      }
-
-      if (searchQuery.trim()) {
-        query = query.or(
-          `title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
-        );
-      }
-
-      switch (sortBy) {
-        case "popular":
-          query = query.order("downloads", { ascending: false });
-          break;
-        case "rating":
-          query = query.order("rating", { ascending: false });
-          break;
-        default:
-          query = query.order("created_at", { ascending: false });
-      }
-
-      const { data, error: fetchError, count } = await query;
-
-      if (fetchError) {
-        setError("스킬 목록을 불러오는데 실패했습니다");
-        return;
-      }
-
-      setSkills((data as SkillWithAuthor[]) ?? []);
-      setTotalCount(count ?? 0);
-    } catch {
-      setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [category, searchQuery, sortBy]);
-
-  useEffect(() => {
-    fetchSkills();
-  }, [fetchSkills]);
-
-  return { skills, isLoading, error, totalCount, refetch: fetchSkills };
+  return useSkills(filters)
 }

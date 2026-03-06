@@ -1,30 +1,33 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createClient } from "@/lib/supabase/client";
-import { signupSchema, type SignupFormData } from "@/lib/validations/auth";
+import { useState } from 'react'
+import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Eye, EyeOff, Mail } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { signupSchema, type SignupSchema } from '@/lib/validations/auth'
+import { Input, Button } from '@/components/ui'
+import { ROUTES } from '@/constants'
 
 export default function SignupForm() {
-  const [serverError, setServerError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [serverError, setServerError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm<SignupFormData>({
+    formState: { errors, isSubmitting },
+  } = useForm<SignupSchema>({
     resolver: zodResolver(signupSchema),
-  });
+  })
 
-  async function onSubmit(formData: SignupFormData) {
-    setIsSubmitting(true);
-    setServerError("");
+  async function onSubmit(formData: SignupSchema) {
+    setServerError('')
+    const supabase = createClient()
 
-    const supabase = createClient();
     const { error } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
@@ -33,132 +36,128 @@ export default function SignupForm() {
           username: formData.username,
         },
       },
-    });
+    })
 
     if (error) {
       setServerError(
-        error.message.includes("already registered")
-          ? "이미 가입된 이메일입니다"
-          : "회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요"
-      );
-      setIsSubmitting(false);
-      return;
+        error.message.includes('already registered')
+          ? '이미 가입된 이메일입니다'
+          : '회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요'
+      )
+      return
     }
 
-    setIsSuccess(true);
-    setIsSubmitting(false);
+    setIsSuccess(true)
   }
 
   if (isSuccess) {
     return (
-      <div className="w-full max-w-sm text-center">
-        <div className="mb-4 text-4xl">✉️</div>
-        <h2 className="mb-2 text-xl font-bold text-black">이메일을 확인해주세요</h2>
-        <p className="mb-6 text-sm leading-relaxed text-gray-500">
+      <div className="w-full text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#F0FDF4]">
+          <Mail size={28} className="text-success" />
+        </div>
+        <h2 className="mb-2 text-xl font-bold text-text-primary">
+          이메일을 확인해주세요!
+        </h2>
+        <p className="mb-8 text-sm leading-relaxed text-text-secondary">
           입력하신 이메일로 인증 링크를 보냈습니다.
           <br />
-          이메일을 확인하여 가입을 완료해주세요.
+          인증 후 로그인할 수 있어요
         </p>
-        <Link
-          href="/auth/login"
-          className="inline-block rounded-xl bg-black px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          로그인 페이지로
+        <Link href={ROUTES.LOGIN}>
+          <Button variant="primary" size="lg">
+            로그인 페이지로
+          </Button>
         </Link>
       </div>
-    );
+    )
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-sm space-y-5">
-      <div>
-        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
-          이메일
-        </label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          {...register("email")}
-          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition-colors focus:border-black"
-          placeholder="email@example.com"
-        />
-        {errors.email && (
-          <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-gray-700">
-          유저명
-        </label>
-        <input
-          id="username"
-          type="text"
-          autoComplete="username"
-          {...register("username")}
-          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition-colors focus:border-black"
-          placeholder="유저명을 입력하세요"
-        />
-        {errors.username && (
-          <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
-          비밀번호
-        </label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="new-password"
-          {...register("password")}
-          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition-colors focus:border-black"
-          placeholder="8자 이상 입력하세요"
-        />
-        {errors.password && (
-          <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-gray-700">
-          비밀번호 확인
-        </label>
-        <input
-          id="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          {...register("confirmPassword")}
-          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition-colors focus:border-black"
-          placeholder="비밀번호를 다시 입력하세요"
-        />
-        {errors.confirmPassword && (
-          <p className="mt-1 text-xs text-red-500">{errors.confirmPassword.message}</p>
-        )}
-      </div>
-
+    <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5">
       {serverError && (
-        <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+        <div className="rounded-lg border border-error/20 bg-[#FEF2F2] px-4 py-3 text-sm text-error">
           {serverError}
-        </p>
+        </div>
       )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full rounded-xl bg-black py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
-        {isSubmitting ? "가입 중..." : "회원가입"}
-      </button>
+      <Input
+        label="이메일"
+        type="email"
+        autoComplete="email"
+        placeholder="email@example.com"
+        error={errors.email?.message}
+        {...register('email')}
+      />
 
-      <p className="text-center text-sm text-gray-500">
-        이미 계정이 있으신가요?{" "}
-        <Link href="/auth/login" className="font-semibold text-black hover:underline">
+      <Input
+        label="유저명"
+        type="text"
+        autoComplete="username"
+        placeholder="유저명을 입력하세요"
+        hint="한글, 영문, 숫자, _ 사용 가능"
+        error={errors.username?.message}
+        {...register('username')}
+      />
+
+      <Input
+        label="비밀번호"
+        type={showPassword ? 'text' : 'password'}
+        autoComplete="new-password"
+        placeholder="비밀번호를 입력하세요"
+        hint="영문+숫자 포함 8자 이상"
+        error={errors.password?.message}
+        rightIcon={
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="text-text-tertiary transition-colors hover:text-text-secondary"
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        }
+        {...register('password')}
+      />
+
+      <Input
+        label="비밀번호 확인"
+        type={showConfirm ? 'text' : 'password'}
+        autoComplete="new-password"
+        placeholder="비밀번호를 다시 입력하세요"
+        error={errors.confirmPassword?.message}
+        rightIcon={
+          <button
+            type="button"
+            onClick={() => setShowConfirm((prev) => !prev)}
+            className="text-text-tertiary transition-colors hover:text-text-secondary"
+            tabIndex={-1}
+          >
+            {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        }
+        {...register('confirmPassword')}
+      />
+
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        fullWidth
+        isLoading={isSubmitting}
+      >
+        회원가입
+      </Button>
+
+      <p className="text-center text-sm text-text-secondary">
+        이미 계정이 있으신가요?{' '}
+        <Link
+          href={ROUTES.LOGIN}
+          className="font-semibold text-text-primary hover:underline"
+        >
           로그인
         </Link>
       </p>
     </form>
-  );
+  )
 }

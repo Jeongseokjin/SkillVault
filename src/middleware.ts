@@ -1,45 +1,69 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { type NextRequest, NextResponse } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
-const AUTH_REQUIRED_PATHS = ["/mypage", "/skills/upload"];
-const ADMIN_REQUIRED_PATHS = ["/admin"];
+const PROTECTED_ROUTES = ['/mypage', '/skills/upload']
+const ADMIN_ROUTES = ['/admin']
+const AUTH_ROUTES = ['/auth/login', '/auth/signup']
 
-function isProtectedPath(pathname: string, paths: string[]) {
-  return paths.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
-  );
+function matchesRoutes(pathname: string, routes: string[]) {
+  return routes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  )
 }
 
 export async function middleware(request: NextRequest) {
-  const { user, supabaseResponse, supabase } = await updateSession(request);
-  const { pathname } = request.nextUrl;
+  const { supabase, user, supabaseResponse } = await updateSession(request)
+  const { pathname } = request.nextUrl
 
-  const requiresAuth = isProtectedPath(pathname, AUTH_REQUIRED_PATHS);
-  const requiresAdmin = isProtectedPath(pathname, ADMIN_REQUIRED_PATHS);
+  const isProtected = matchesRoutes(pathname, PROTECTED_ROUTES)
+  const isAdmin = matchesRoutes(pathname, ADMIN_ROUTES)
+  const isAuth = matchesRoutes(pathname, AUTH_ROUTES)
 
-  if ((requiresAuth || requiresAdmin) && !user) {
-    const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+  if (!user && (isProtected || isAdmin)) {
+    const loginUrl = new URL('/auth/login', request.url)
+    if (isProtected) {
+      loginUrl.searchParams.set('redirectTo', pathname)
+    }
+    return NextResponse.redirect(loginUrl)
   }
 
-  if (requiresAdmin && user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+  if (user && isAuth) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
 
-    if (profile?.role !== "admin") {
-      return NextResponse.redirect(new URL("/", request.url));
+  if (user && isAdmin) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_blocked')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.is_blocked && pathname !== '/blocked') {
+      return NextResponse.redirect(new URL('/blocked', request.url))
+    }
+
+    if (profile?.role !== 'admin' && profile?.role !== 'superadmin') {
+      return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
-  return supabaseResponse;
+  if (user && !isAdmin && !isAuth) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_blocked')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.is_blocked && pathname !== '/blocked') {
+      return NextResponse.redirect(new URL('/blocked', request.url))
+    }
+  }
+
+  return supabaseResponse
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-};
+}

@@ -1,140 +1,238 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import Navbar from "@/components/layout/Navbar";
-import { createClient } from "@/lib/supabase/client";
-import type { Profile, UserRole } from "@/types";
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { ShieldAlert, ShieldCheck } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { Button, Avatar, Badge } from '@/components/ui'
+import { ADMIN_ITEMS_PER_PAGE } from '@/constants'
+import type { Profile, UserRole } from '@/types'
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  superadmin: '최고관리자',
+  admin: '관리자',
+  user: '일반유저',
+}
+
+const ROLE_BADGE_VARIANT: Record<UserRole, 'premium' | 'warning' | 'default'> = {
+  superadmin: 'premium',
+  admin: 'warning',
+  user: 'default',
+}
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const [users, setUsers] = useState<Profile[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers()
+  }, [page])
 
   async function fetchUsers() {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
+    setIsLoading(true)
+    const supabase = createClient()
+    const from = (page - 1) * ADMIN_ITEMS_PER_PAGE
+    const to = from + ADMIN_ITEMS_PER_PAGE - 1
 
-    setUsers((data as Profile[]) ?? []);
-    setIsLoading(false);
+    const { data, count } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to)
+
+    setUsers((data ?? []) as Profile[])
+    setTotal(count ?? 0)
+    setIsLoading(false)
   }
 
-  async function updateUserRole(userId: string, role: UserRole) {
+  async function toggleBlock(userId: string, currentlyBlocked: boolean) {
+    const supabase = createClient()
+
     const { error } = await supabase
-      .from("profiles")
-      .update({ role })
-      .eq("id", userId);
+      .from('profiles')
+      .update({ is_blocked: !currentlyBlocked })
+      .eq('id', userId)
 
-    if (!error) {
-      setUsers((prev) =>
-        prev.map((user) => (user.id === userId ? { ...user, role } : user))
-      );
+    if (error) {
+      toast.error('상태 변경에 실패했습니다')
+      return
     }
+
+    toast.success(currentlyBlocked ? '차단이 해제되었습니다' : '유저가 차단되었습니다')
+    fetchUsers()
   }
 
-  async function deleteUser(userId: string) {
-    const confirmed = window.confirm("정말 이 유저를 삭제하시겠습니까?");
-    if (!confirmed) return;
+  async function updateRole(userId: string, role: UserRole) {
+    const supabase = createClient()
 
-    const { error } = await supabase.from("profiles").delete().eq("id", userId);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role })
+      .eq('id', userId)
 
-    if (!error) {
-      setUsers((prev) => prev.filter((user) => user.id !== userId));
+    if (error) {
+      toast.error('역할 변경에 실패했습니다')
+      return
     }
+
+    toast.success(`${ROLE_LABELS[role]}로 변경되었습니다`)
+    fetchUsers()
+  }
+
+  const totalPages = Math.ceil(total / ADMIN_ITEMS_PER_PAGE)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
-      <Navbar />
+    <div>
+      <h1 className="mb-6 text-2xl font-bold tracking-[-0.5px] text-text-primary">
+        유저 관리
+      </h1>
 
-      <div className="mx-auto max-w-5xl px-6 py-12">
-        <h1 className="mb-8 text-2xl font-bold tracking-tight text-black">
-          유저 관리
-        </h1>
-
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }, (_, index) => (
-              <div
-                key={index}
-                className="h-16 animate-pulse rounded-xl border border-gray-200 bg-gray-50"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 font-semibold text-gray-500">유저명</th>
-                  <th className="px-6 py-3 font-semibold text-gray-500">이메일</th>
-                  <th className="px-6 py-3 font-semibold text-gray-500">역할</th>
-                  <th className="px-6 py-3 font-semibold text-gray-500">가입일</th>
-                  <th className="px-6 py-3 font-semibold text-gray-500">액션</th>
+      {users.length === 0 ? (
+        <p className="py-20 text-center text-sm text-text-tertiary">
+          유저가 없습니다
+        </p>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-[#FAFAFA]">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
+                    유저
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
+                    이메일
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
+                    역할
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
+                    상태
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary">
+                    가입일
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-text-secondary">
+                    액션
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id} className="border-b border-gray-50 last:border-0">
-                    <td className="px-6 py-4 font-medium text-black">
-                      {user.username ?? "-"}
+                  <tr
+                    key={user.id}
+                    className="border-b border-[#F0F0F0] last:border-b-0"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar
+                          src={user.avatar_url}
+                          username={user.username}
+                          size="sm"
+                        />
+                        <span className="text-sm font-medium text-text-primary">
+                          {user.username ?? '-'}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-500">{user.email}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={
-                          user.role === "admin"
-                            ? "rounded-md bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-700"
-                            : "rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600"
-                        }
-                      >
-                        {user.role}
-                      </span>
+                    <td className="px-4 py-3 text-sm text-text-secondary">
+                      {user.email}
                     </td>
-                    <td className="px-6 py-4 text-gray-400">
-                      {new Date(user.created_at).toLocaleDateString("ko-KR")}
+                    <td className="px-4 py-3">
+                      <Badge variant={ROLE_BADGE_VARIANT[user.role]} size="sm">
+                        {ROLE_LABELS[user.role]}
+                      </Badge>
                     </td>
-                    <td className="flex gap-2 px-6 py-4">
-                      {user.role === "user" ? (
-                        <button
-                          onClick={() => updateUserRole(user.id, "admin")}
-                          className="rounded-lg bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 hover:bg-purple-100"
-                        >
-                          관리자로
-                        </button>
+                    <td className="px-4 py-3">
+                      {user.is_blocked ? (
+                        <Badge variant="error" size="sm">차단됨</Badge>
                       ) : (
-                        <button
-                          onClick={() => updateUserRole(user.id, "user")}
-                          className="rounded-lg bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-200"
-                        >
-                          유저로
-                        </button>
+                        <Badge variant="success" size="sm">정상</Badge>
                       )}
-                      <button
-                        onClick={() => deleteUser(user.id)}
-                        className="rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
-                      >
-                        삭제
-                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-text-tertiary">
+                      {new Date(user.created_at).toLocaleDateString('ko-KR')}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        {user.role === 'user' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateRole(user.id, 'admin')}
+                          >
+                            관리자 지정
+                          </Button>
+                        )}
+                        {user.role === 'admin' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateRole(user.id, 'user')}
+                          >
+                            관리자 해제
+                          </Button>
+                        )}
+                        {user.role !== 'superadmin' && (
+                          <Button
+                            variant={user.is_blocked ? 'secondary' : 'danger'}
+                            size="sm"
+                            onClick={() => toggleBlock(user.id, user.is_blocked)}
+                          >
+                            {user.is_blocked ? (
+                              <span className="flex items-center gap-1">
+                                <ShieldCheck size={12} /> 해제
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <ShieldAlert size={12} /> 차단
+                              </span>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-
-            {users.length === 0 && (
-              <p className="py-12 text-center text-sm text-gray-400">
-                유저가 없습니다
-              </p>
-            )}
           </div>
-        )}
-      </div>
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                이전
+              </Button>
+              <span className="text-sm text-text-secondary">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                다음
+              </Button>
+            </div>
+          )}
+        </>
+      )}
     </div>
-  );
+  )
 }

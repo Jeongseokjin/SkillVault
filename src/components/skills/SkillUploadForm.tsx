@@ -110,6 +110,7 @@ export default function SkillUploadForm({ userId }: SkillUploadFormProps) {
   })
 
   function handleTagKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) return
     if (event.key !== 'Enter') return
     event.preventDefault()
 

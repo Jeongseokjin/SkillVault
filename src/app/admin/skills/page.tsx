@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Package,
   Tag,
+  Upload,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button, Badge, Avatar } from '@/components/ui'
@@ -35,13 +36,18 @@ function SkillCard({
   onApprove,
   onReject,
   onDelete,
+  onPublish,
 }: {
   skill: SkillWithAuthor
   onApprove: () => void
   onReject: () => void
   onDelete: () => void
+  onPublish: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
+
+  const isApproved = skill.status === 'approved'
+  const isPublished = !!skill.npm_package_name
 
   return (
     <div className="rounded-xl border border-border bg-surface">
@@ -85,9 +91,15 @@ function SkillCard({
             {SKILL_STATUS_LABELS[skill.status]}
           </span>
 
-          {skill.npm_package_name && (
+          {isApproved && !isPublished && (
+            <Badge variant="default" size="sm">
+              MCP 검색 가능
+            </Badge>
+          )}
+
+          {isApproved && isPublished && (
             <Badge variant="success" size="sm">
-              MCP
+              MCP + npm
             </Badge>
           )}
 
@@ -140,7 +152,7 @@ function SkillCard({
           <div className="flex gap-2">
             {skill.status !== 'approved' && (
               <Button variant="primary" size="sm" onClick={onApprove}>
-                승인 + MCP 배포
+                승인
               </Button>
             )}
             {skill.status !== 'rejected' && (
@@ -148,6 +160,24 @@ function SkillCard({
                 거절
               </Button>
             )}
+
+            {isApproved && !isPublished && (
+              <div className="relative group">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  onClick={onPublish}
+                >
+                  <Upload size={14} className="mr-1" />
+                  npm 배포
+                </Button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block whitespace-nowrap rounded-md bg-text-primary px-3 py-1.5 text-[11px] text-white shadow-lg">
+                  npm organization 설정 후 사용 가능
+                </div>
+              </div>
+            )}
+
             <Button
               variant="ghost"
               size="sm"
@@ -213,27 +243,28 @@ export default function AdminSkillsPage() {
       return
     }
 
-    if (status === 'approved') {
-      toast.loading('승인 완료, MCP 패키지 배포 중...', { id: 'publish' })
+    toast.success(`${SKILL_STATUS_LABELS[status]}으로 변경되었습니다`)
+    fetchSkills()
+  }
 
-      try {
-        const res = await fetch(`/api/skills/${skillId}/publish`, {
-          method: 'POST',
+  async function publishToNpm(skillId: string) {
+    toast.loading('npm 패키지 배포 중...', { id: 'publish' })
+
+    try {
+      const res = await fetch(`/api/skills/${skillId}/publish`, {
+        method: 'POST',
+      })
+      const result = await res.json()
+
+      if (res.ok) {
+        toast.success(`npm 배포 완료: ${result.data.packageName}`, {
+          id: 'publish',
         })
-        const result = await res.json()
-
-        if (res.ok) {
-          toast.success(`승인 + MCP 배포 완료: ${result.data.packageName}`, {
-            id: 'publish',
-          })
-        } else {
-          toast.error(`승인됨, 배포 실패: ${result.error}`, { id: 'publish' })
-        }
-      } catch {
-        toast.error('승인됨, 배포 중 오류 발생', { id: 'publish' })
+      } else {
+        toast.error(`배포 실패: ${result.error}`, { id: 'publish' })
       }
-    } else {
-      toast.success(`${SKILL_STATUS_LABELS[status]}으로 변경되었습니다`)
+    } catch {
+      toast.error('배포 중 오류 발생', { id: 'publish' })
     }
 
     fetchSkills()
@@ -302,6 +333,7 @@ export default function AdminSkillsPage() {
                 onApprove={() => updateStatus(skill.id, 'approved')}
                 onReject={() => updateStatus(skill.id, 'rejected')}
                 onDelete={() => deleteSkill(skill.id)}
+                onPublish={() => publishToNpm(skill.id)}
               />
             ))}
           </div>

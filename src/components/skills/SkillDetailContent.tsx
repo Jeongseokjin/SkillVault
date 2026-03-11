@@ -314,13 +314,13 @@ export default function SkillDetailContent({
             <div className="rounded-xl border border-border bg-surface p-6">
               <div className="mb-4 flex items-center gap-3">
                 <Avatar
-                  src={skill.author.avatar_url}
-                  username={skill.author.username}
+                  src={skill.author?.avatar_url}
+                  username={skill.author?.username ?? '알 수 없음'}
                   size="md"
                 />
                 <div>
                   <p className="text-sm font-semibold text-text-primary">
-                    {skill.author.username}
+                    {skill.author?.username ?? '알 수 없음'}
                   </p>
                   <p className="text-xs text-text-tertiary">제작자</p>
                 </div>

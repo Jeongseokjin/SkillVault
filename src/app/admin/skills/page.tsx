@@ -48,8 +48,8 @@ function SkillCard({
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
           <Avatar
-            src={skill.author.avatar_url}
-            username={skill.author.username}
+            src={skill.author?.avatar_url}
+            username={skill.author?.username ?? '알 수 없음'}
             size="sm"
           />
           <div>
@@ -63,7 +63,7 @@ function SkillCard({
               <ExternalLink size={12} className="text-text-tertiary" />
             </div>
             <div className="flex items-center gap-2 text-xs text-text-tertiary">
-              <span>{skill.author.username ?? skill.author.email}</span>
+              <span>{skill.author?.username ?? skill.author?.email ?? '알 수 없음'}</span>
               <span>·</span>
               <span>{skill.category}</span>
               <span>·</span>

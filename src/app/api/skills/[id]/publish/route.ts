@@ -166,6 +166,7 @@ async function publishToNpm(
     _id: packageName,
     name: packageName,
     description,
+    access: 'public',
     'dist-tags': { latest: version },
     versions: {
       [version]: {

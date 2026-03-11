@@ -339,9 +339,16 @@ export default function SkillDetailContent({
                   size="md"
                 />
                 <div>
-                  <p className="text-sm font-semibold text-text-primary">
-                    {skill.author?.username ?? '알 수 없음'}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-text-primary">
+                      {skill.author?.username ?? '알 수 없음'}
+                    </p>
+                    {(skill.author?.role === 'admin' || skill.author?.role === 'superadmin') && (
+                      <span className="rounded-full bg-error px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                        관리자
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-text-tertiary">제작자</p>
                 </div>
               </div>

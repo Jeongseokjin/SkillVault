@@ -100,6 +100,17 @@ export default function SkillCard({
         {skill.title}
       </h3>
 
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className="text-xs text-text-tertiary">
+          {skill.author?.username ?? '알 수 없음'}
+        </span>
+        {(skill.author?.role === 'admin' || skill.author?.role === 'superadmin') && (
+          <span className="rounded-full bg-error px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+            관리자
+          </span>
+        )}
+      </div>
+
       <p className="mb-4 line-clamp-2 text-[13px] leading-relaxed text-[#777777]">
         {skill.description}
       </p>

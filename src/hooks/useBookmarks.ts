@@ -109,6 +109,8 @@ export function useBookmarkToggle(userId: string | undefined) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, userId] })
+      queryClient.invalidateQueries({ queryKey: ['skills'] })
+      queryClient.invalidateQueries({ queryKey: ['skill'] })
     },
   })
 }

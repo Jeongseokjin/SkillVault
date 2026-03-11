@@ -99,6 +99,8 @@ export function useLikeToggle(userId: string | undefined) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, userId] })
+      queryClient.invalidateQueries({ queryKey: ['skills'] })
+      queryClient.invalidateQueries({ queryKey: ['skill'] })
     },
   })
 }

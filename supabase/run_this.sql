@@ -215,13 +215,9 @@ create trigger on_download_inserted
 -- profiles
 alter table profiles enable row level security;
 
-create policy "profiles_select_own"
+create policy "profiles_select_all"
   on profiles for select
-  using (auth.uid() = id);
-
-create policy "profiles_select_admin"
-  on profiles for select
-  using (public.get_user_role() in ('admin', 'superadmin'));
+  using (true);
 
 create policy "profiles_update_own"
   on profiles for update

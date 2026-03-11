@@ -18,7 +18,7 @@ export interface Profile {
 // 스킬 관련 타입
 // ========================
 export type SkillStatus = 'pending' | 'approved' | 'rejected'
-export type Category = '디자인/UI' | '개발' | '마케팅' | '기타'
+export type Category = '개발' | '디자인' | '마케팅' | '업무'
 export type SortOption = 'latest' | 'popular' | 'likes'
 
 export interface Skill {

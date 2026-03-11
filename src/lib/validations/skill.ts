@@ -17,7 +17,7 @@ export const skillUploadSchema = z.object({
     .string()
     .min(1, '설명을 입력해주세요')
     .max(MAX_DESCRIPTION_LENGTH, `설명은 ${MAX_DESCRIPTION_LENGTH}자 이하여야 합니다`),
-  category: z.enum(['디자인/UI', '개발', '마케팅', '기타'], {
+  category: z.enum(['개발', '디자인', '마케팅', '업무'], {
     errorMap: () => ({ message: '카테고리를 선택해주세요' }),
   }),
   tags: z

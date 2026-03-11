@@ -39,10 +39,10 @@ export const UPLOAD_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 // ========================
 export const CATEGORIES = [
   { value: '전체', label: '전체' },
-  { value: '디자인/UI', label: '디자인/UI' },
   { value: '개발', label: '개발' },
+  { value: '디자인', label: '디자인' },
   { value: '마케팅', label: '마케팅' },
-  { value: '기타', label: '기타' },
+  { value: '업무', label: '업무' },
 ] as const
 
 // ========================
@@ -77,7 +77,7 @@ export const REPORT_REASONS = [
   '부적절한 콘텐츠',
   '저작권 침해',
   '허위 정보',
-  '기타',
+  '업무',
 ] as const
 
 // ========================

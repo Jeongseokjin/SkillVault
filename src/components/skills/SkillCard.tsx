@@ -8,10 +8,10 @@ import { Badge } from '@/components/ui'
 import type { SkillWithAuthor, SkillStatus } from '@/types'
 
 const CATEGORY_ICONS: Record<string, string> = {
-  '디자인/UI': '⬡',
   '개발': '◈',
+  '디자인': '⬡',
   '마케팅': '◉',
-  '기타': '◎',
+  '업무': '◎',
 }
 
 const MAX_VISIBLE_TAGS = 3

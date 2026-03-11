@@ -206,6 +206,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
   const { id } = await params
   const npmToken = process.env.NPM_TOKEN
 
+  console.log('[publish] NPM_TOKEN exists:', !!npmToken, 'length:', npmToken?.length ?? 0)
+
   if (!npmToken) {
     return NextResponse.json(
       { data: null, error: 'NPM 토큰이 설정되지 않았습니다' },
@@ -306,6 +308,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
   } catch (err) {
     const message =
       err instanceof Error ? err.message : '배포 중 오류가 발생했습니다'
+    console.error('[publish] packageName:', packageName, 'version:', version)
+    console.error('[publish] error:', err)
     return NextResponse.json({ data: null, error: message }, { status: 500 })
   }
 }

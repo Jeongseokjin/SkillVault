@@ -162,20 +162,10 @@ function SkillCard({
             )}
 
             {isApproved && !isPublished && (
-              <div className="relative group">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled
-                  onClick={onPublish}
-                >
-                  <Upload size={14} className="mr-1" />
-                  npm 배포
-                </Button>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block whitespace-nowrap rounded-md bg-text-primary px-3 py-1.5 text-[11px] text-white shadow-lg">
-                  npm organization 설정 후 사용 가능
-                </div>
-              </div>
+              <Button variant="ghost" size="sm" onClick={onPublish}>
+                <Upload size={14} className="mr-1" />
+                npm 배포
+              </Button>
             )}
 
             <Button

@@ -129,6 +129,7 @@ export default function SkillDetailContent({
   const router = useRouter()
   const [isReportOpen, setIsReportOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [mcpCopied, setMcpCopied] = useState(false)
 
   const { data, isLoading, error, refetch } = useSkillDetail(skillId)
   const { data: bookmarks } = useBookmarks(userId ?? undefined)
@@ -187,6 +188,25 @@ export default function SkillDetailContent({
     setCopied(true)
     toast.success('복사되었습니다')
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleCopyMcpConfig() {
+    const config = JSON.stringify(
+      {
+        mcpServers: {
+          skillvault: {
+            type: 'http',
+            url: 'https://skill-vault-sage.vercel.app/api/mcp',
+          },
+        },
+      },
+      null,
+      2
+    )
+    navigator.clipboard.writeText(config)
+    setMcpCopied(true)
+    toast.success('복사되었습니다')
+    setTimeout(() => setMcpCopied(false), 2000)
   }
 
   if (isLoading) {
@@ -402,6 +422,46 @@ export default function SkillDetailContent({
                 )}
               </div>
             </div>
+
+            {skill.status === 'approved' && (
+              <div className="rounded-xl border border-border bg-surface p-6">
+                <div className="mb-3 flex items-center gap-2">
+                  <Package size={16} className="text-accent" />
+                  <h3 className="text-sm font-bold text-text-primary">
+                    Claude Code에서 사용하기
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <pre className="overflow-x-auto rounded-lg bg-[#1E1E1E] px-4 py-3 font-mono text-xs leading-relaxed text-[#D4D4D4]">
+{`{
+  "mcpServers": {
+    "skillvault": {
+      "type": "http",
+      "url": "https://skill-vault-sage.vercel.app/api/mcp"
+    }
+  }
+}`}
+                    </pre>
+                    <button
+                      onClick={handleCopyMcpConfig}
+                      className="absolute right-2 top-2 rounded-md p-1.5 text-[#888] transition-colors hover:bg-[#333] hover:text-white"
+                      aria-label="복사"
+                    >
+                      {mcpCopied ? (
+                        <Check size={14} className="text-success" />
+                      ) : (
+                        <Copy size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-text-tertiary">
+                    프로젝트 루트 또는 ~/.claude/에 .mcp.json으로 저장하세요.
+                    한 번만 설정하면 모든 스킬을 사용할 수 있습니다.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {skill.npm_package_name && (
               <div className="rounded-xl border border-border bg-surface p-6">

@@ -37,12 +37,14 @@ function SkillCard({
   onReject,
   onDelete,
   onPublish,
+  onUnpublish,
 }: {
   skill: SkillWithAuthor
   onApprove: () => void
   onReject: () => void
   onDelete: () => void
   onPublish: () => void
+  onUnpublish: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -168,6 +170,20 @@ function SkillCard({
               </Button>
             )}
 
+            {isPublished && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  if (confirm('npm 배포를 취소하시겠습니까? 72시간 이내에만 가능합니다.')) {
+                    onUnpublish()
+                  }
+                }}
+              >
+                npm 배포 취소
+              </Button>
+            )}
+
             <Button
               variant="ghost"
               size="sm"
@@ -260,6 +276,27 @@ export default function AdminSkillsPage() {
     fetchSkills()
   }
 
+  async function unpublishFromNpm(skillId: string) {
+    toast.loading('npm 배포 취소 중...', { id: 'unpublish' })
+
+    try {
+      const res = await fetch(`/api/skills/${skillId}/unpublish`, {
+        method: 'POST',
+      })
+      const result = await res.json()
+
+      if (res.ok) {
+        toast.success('npm 배포가 취소되었습니다', { id: 'unpublish' })
+      } else {
+        toast.error(`배포 취소 실패: ${result.error}`, { id: 'unpublish' })
+      }
+    } catch {
+      toast.error('배포 취소 중 오류 발생', { id: 'unpublish' })
+    }
+
+    fetchSkills()
+  }
+
   async function deleteSkill(skillId: string) {
     const supabase = createClient()
 
@@ -324,6 +361,7 @@ export default function AdminSkillsPage() {
                 onReject={() => updateStatus(skill.id, 'rejected')}
                 onDelete={() => deleteSkill(skill.id)}
                 onPublish={() => publishToNpm(skill.id)}
+                onUnpublish={() => unpublishFromNpm(skill.id)}
               />
             ))}
           </div>

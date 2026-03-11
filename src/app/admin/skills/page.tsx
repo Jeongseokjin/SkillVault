@@ -34,10 +34,12 @@ function SkillCard({
   skill,
   onApprove,
   onReject,
+  onDelete,
 }: {
   skill: SkillWithAuthor
   onApprove: () => void
   onReject: () => void
+  onDelete: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -146,6 +148,17 @@ function SkillCard({
                 거절
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (confirm('이 스킬을 완전히 삭제하시겠습니까? 복구할 수 없습니다.')) {
+                  onDelete()
+                }
+              }}
+            >
+              삭제
+            </Button>
           </div>
         </div>
       )}
@@ -226,6 +239,23 @@ export default function AdminSkillsPage() {
     fetchSkills()
   }
 
+  async function deleteSkill(skillId: string) {
+    const supabase = createClient()
+
+    const { error } = await supabase
+      .from('skills')
+      .delete()
+      .eq('id', skillId)
+
+    if (error) {
+      toast.error('삭제에 실패했습니다')
+      return
+    }
+
+    toast.success('스킬이 삭제되었습니다')
+    fetchSkills()
+  }
+
   const totalPages = Math.ceil(total / ADMIN_ITEMS_PER_PAGE)
 
   return (
@@ -271,6 +301,7 @@ export default function AdminSkillsPage() {
                 skill={skill}
                 onApprove={() => updateStatus(skill.id, 'approved')}
                 onReject={() => updateStatus(skill.id, 'rejected')}
+                onDelete={() => deleteSkill(skill.id)}
               />
             ))}
           </div>

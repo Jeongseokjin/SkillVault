@@ -36,11 +36,15 @@ export default function LoginForm() {
     })
 
     if (error) {
-      setServerError(
-        error.message === 'Invalid login credentials'
-          ? '이메일 또는 비밀번호가 올바르지 않습니다'
-          : '로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요'
-      )
+      if (error.message === 'Email not confirmed') {
+        setServerError(
+          '이메일 인증이 완료되지 않았습니다. 회원가입 페이지에서 인증코드를 입력해주세요.'
+        )
+      } else if (error.message === 'Invalid login credentials') {
+        setServerError('이메일 또는 비밀번호가 올바르지 않습니다')
+      } else {
+        setServerError('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요')
+      }
       return
     }
 

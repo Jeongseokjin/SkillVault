@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, Mail, ShieldCheck } from 'lucide-react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { signupSchema, type SignupSchema } from '@/lib/validations/auth'
 import { Input, Button } from '@/components/ui'
@@ -125,7 +126,7 @@ export default function SignupForm() {
     const { error } = await supabase.auth.verifyOtp({
       email: signupEmail,
       token: otpCode,
-      type: 'signup',
+      type: 'email',
     })
 
     if (error) {
@@ -134,6 +135,7 @@ export default function SignupForm() {
       return
     }
 
+    toast.success('회원가입이 완료되었습니다! 환영합니다 🎉')
     router.push(ROUTES.HOME)
   }
 

@@ -4,7 +4,7 @@ import { updateSession } from '@/lib/supabase/middleware'
 const PROTECTED_ROUTES = ['/mypage', '/skills/upload']
 const ADMIN_ROUTES = ['/admin']
 const AUTH_ROUTES = ['/auth/login', '/auth/signup']
-const PUBLIC_API_ROUTES = ['/api/auth']
+const PUBLIC_API_ROUTES = ['/api/auth', '/api/mcp']
 
 function matchesRoutes(pathname: string, routes: string[]) {
   return routes.some(

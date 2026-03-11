@@ -135,8 +135,10 @@ export default function SignupForm() {
       return
     }
 
-    toast.success('회원가입이 완료되었습니다! 환영합니다 🎉')
-    router.push(ROUTES.HOME)
+    // 인증 완료 후 세션 제거 (로그인 페이지에서 직접 로그인하도록)
+    await supabase.auth.signOut()
+    toast.success('회원가입이 완료되었습니다! 로그인해주세요.')
+    router.push(ROUTES.LOGIN)
   }
 
   async function handleResendCode() {

@@ -412,5 +412,5 @@ from auth.users
 where id not in (select id from public.profiles)
 on conflict (id) do nothing;
 
--- 8. Set superadmin
-UPDATE profiles SET role = 'superadmin' WHERE email = '1223tjrwls@naver.com';
+-- 8. Set superadmin (본인 이메일로 변경 후 실행)
+-- UPDATE profiles SET role = 'superadmin' WHERE email = 'your-email@example.com';

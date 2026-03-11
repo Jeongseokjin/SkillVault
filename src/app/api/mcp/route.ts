@@ -76,6 +76,42 @@ function jsonRpcError(
   )
 }
 
+const TEXT_EXTENSIONS = ['.md', '.txt', '.json', '.yaml', '.yml']
+const MAX_FILE_BYTES = 50 * 1024 // 50KB
+
+async function fetchFileContent(fileUrl: string): Promise<string | null> {
+  try {
+    const extension = fileUrl.split('.').pop()?.toLowerCase()
+    if (!extension || !TEXT_EXTENSIONS.includes(`.${extension}`)) {
+      return null
+    }
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+
+    const res = await fetch(fileUrl, { signal: controller.signal })
+    clearTimeout(timeout)
+
+    if (!res.ok) return null
+
+    const contentLength = res.headers.get('content-length')
+    if (contentLength && Number(contentLength) > MAX_FILE_BYTES) {
+      const buffer = await res.arrayBuffer()
+      const truncated = new TextDecoder().decode(buffer.slice(0, MAX_FILE_BYTES))
+      return truncated + '\n\n... (50KB 초과로 잘림)'
+    }
+
+    const text = await res.text()
+    if (text.length > MAX_FILE_BYTES) {
+      return text.slice(0, MAX_FILE_BYTES) + '\n\n... (50KB 초과로 잘림)'
+    }
+
+    return text
+  } catch {
+    return null
+  }
+}
+
 async function handleSearchSkills(args: Record<string, unknown>) {
   const query = args.query as string
   const category = args.category as string | undefined
@@ -167,7 +203,12 @@ async function handleGetSkillContent(args: Record<string, unknown>) {
   }
 
   if (data.file_url) {
-    text += `## 파일\n- 다운로드: ${data.file_url}\n\n`
+    const fileContent = await fetchFileContent(data.file_url)
+    if (fileContent) {
+      text += `## 스킬 파일 내용\n\`\`\`\n${fileContent}\n\`\`\`\n\n`
+    } else {
+      text += `## 파일\n- 다운로드: ${data.file_url}\n\n`
+    }
   }
 
   if (data.preview_url) {
